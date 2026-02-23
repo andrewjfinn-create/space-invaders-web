@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Space Invaders</title>
+    <style>
+        body { background: black; color: white; }
+        canvas { display: block; margin: 0 auto; }
+    </style>
+</head>
+<body>
+    <canvas id="gameCanvas" width="480" height="320"></canvas>
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        let playerWidth = 40;
+        let playerHeight = 20;
+        let playerX = (canvas.width - playerWidth) / 2;
+        let rightPressed = false;
+        let leftPressed = false;
+
+        let invaderWidth = 40;
+        let invaderHeight = 20;
+        let invaders = [];
+        let score = 0;
+
+        function initInvaders() {
+            const columns = 5;
+            const rows = 3;
+            for(let r = 0; r < rows; r++) {
+                for(let c = 0; c < columns; c++) {
+                    invaders.push({ x: c * (invaderWidth + 10), y: r * (invaderHeight + 10), alive: true });
+                }
+            }
+        }
+
+        function drawInvaders() {
+            ctx.fillStyle = 'green';
+            invaders.forEach(invader => {
+                if (invader.alive) {
+                    ctx.fillRect(invader.x, invader.y, invaderWidth, invaderHeight);
+                }
+            });
+        }
+
+        function drawPlayer() {
+            ctx.fillStyle = 'blue';
+            ctx.fillRect(playerX, canvas.height - playerHeight, playerWidth, playerHeight);
+        }
+
+        function drawScore() {
+            ctx.fillStyle = 'white';
+            ctx.fillText('Score: ' + score, 8, 20);
+        }
+
+        document.addEventListener('keydown', function(event) {
+            if(event.key === 'Right' || event.key === 'ArrowRight') {
+                rightPressed = true;
+            } else if(event.key === 'Left' || event.key === 'ArrowLeft') {
+                leftPressed = true;
+            }
+        });
+
+        document.addEventListener('keyup', function(event) {
+            if(event.key === 'Right' || event.key === 'ArrowRight') {
+                rightPressed = false;
+            } else if(event.key === 'Left' || event.key === 'ArrowLeft') {
+                leftPressed = false;
+            }
+        });
+
+        function collisionDetection() {
+            invaders.forEach(invader => {
+                if(invader.alive && invader.y + invaderHeight >= canvas.height - playerHeight && 
+                   invader.x < playerX + playerWidth && 
+                   invader.x + invaderWidth > playerX) {
+                    alert('Game Over! Final Score: ' + score);
+                    document.location.reload();
+                }
+            });
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawInvaders();
+            drawPlayer();
+            drawScore();
+            collisionDetection();
+
+            if(rightPressed && playerX < canvas.width - playerWidth) {
+                playerX += 7;
+            } else if(leftPressed && playerX > 0) {
+                playerX -= 7;
+            }
+
+            invaders.forEach(invader => {
+                if (invader.alive) {
+                    invader.y += 0.1;
+                    if (invader.y > canvas.height) {
+                        alert('Game Over! Final Score: ' + score);
+                        document.location.reload();
+                    }
+                }
+            });
+
+            requestAnimationFrame(draw);
+        }
+
+        initInvaders();
+        draw();
+    </script>
+</body>
+</html>

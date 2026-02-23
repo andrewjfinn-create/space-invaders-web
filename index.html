@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,104 +7,132 @@
     <style>
         body {
             margin: 0;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
             background-color: black;
-            color: white;
-            font-family: Arial, sans-serif;
+            overflow: hidden;
         }
         canvas {
-            border: 1px solid white;
+            display: block;
+            margin: auto;
+            border: 2px solid #00ff00;
+            box-shadow: 0 0 20px rgba(0, 255, 0, 0.5);
         }
     </style>
 </head>
 <body>
-    <canvas id="gameCanvas" width="480" height="320"></canvas>
+    <canvas id="gameCanvas"></canvas>
     <script>
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
 
-        let player = { x: canvas.width / 2 - 15, y: canvas.height - 30, width: 30, height: 30, speed: 5 };
-        let bullets = [];
-        let aliens = [];
         let score = 0;
-        let particleEffects = [];
+        let lives = 3;
+        const aliens = [];
+        const bullets = [];
+        let player;
 
-        function createAliens() {
-            for (let i = 0; i < 5; i++) {
-                aliens.push({ x: i * 70 + 30, y: 30, width: 40, height: 20 });
+        class Player {
+            constructor() {
+                this.x = canvas.width / 2;
+                this.y = canvas.height - 50;
+                this.width = 50;
+                this.height = 30;
+                this.color = '#00ff00';
+            }
+            draw() {
+                ctx.fillStyle = this.color;
+                ctx.fillRect(this.x, this.y, this.width, this.height);
+            }
+            move(dir) {
+                this.x += dir * 10;
+            }
+            shoot() {
+                bullets.push(new Bullet(this.x + this.width / 2 - 5, this.y));
             }
         }
 
-        function drawPlayer() {
-            ctx.fillStyle = 'green';
-            ctx.fillRect(player.x, player.y, player.width, player.height);
+        class Bullet {
+            constructor(x, y) {
+                this.x = x;
+                this.y = y;
+                this.width = 5;
+                this.height = 10;
+                this.color = '#ff0000';
+            }
+            update() {
+                this.y -= 5;
+            }
+            draw() {
+                ctx.fillStyle = this.color;
+                ctx.fillRect(this.x, this.y, this.width, this.height);
+            }
         }
 
-        function drawAliens() {
-            aliens.forEach(alien => {
-                ctx.fillStyle = 'red';
-                ctx.fillRect(alien.x, alien.y, alien.width, alien.height);
-            });
+        class Alien {
+            constructor(x, y) {
+                this.x = x;
+                this.y = y;
+                this.width = 40;
+                this.height = 30;
+                this.color = '#ffff00';
+            }
+            draw() {
+                ctx.fillStyle = this.color;
+                ctx.fillRect(this.x, this.y, this.width, this.height);
+            }
         }
 
-        function drawBullets() {
-            bullets.forEach(bullet => {
-                bullet.y -= bullet.speed;
-                ctx.fillStyle = 'yellow';
-                ctx.fillRect(bullet.x, bullet.y, bullet.width, bullet.height);
-            });
-            bullets = bullets.filter(bullet => bullet.y > 0);
+        function createAliens() {
+            for (let i = 0; i < 5; i++) {
+                for (let j = 0; j < 3; j++) {
+                    aliens.push(new Alien(i * 60 + 40, j * 40 + 30));
+                }
+            }
         }
 
-        function handleCollisions() {
+        function collisionDetection() {
             bullets.forEach((bullet, bIndex) => {
                 aliens.forEach((alien, aIndex) => {
-                    if (bullet.x < alien.x + alien.width && bullet.x + bullet.width > alien.x && bullet.y < alien.y + alien.height && bullet.y + bullet.height > alien.y) {
-                        particles.push({ x: alien.x, y: alien.y });
-                        score += 10;
-                        aliens.splice(aIndex, 1);
+                    if (bullet.x < alien.x + alien.width &&
+                        bullet.x + bullet.width > alien.x &&
+                        bullet.y < alien.y + alien.height &&
+                        bullet.y + bullet.height > alien.y) {
+                        // Remove bullet and alien
                         bullets.splice(bIndex, 1);
+                        aliens.splice(aIndex, 1);
+                        score += 10;
                     }
                 });
             });
         }
 
-        function drawParticles() {
-            particleEffects.forEach((particle, index) => {
-                ctx.fillStyle = 'white';
-                ctx.fillRect(particle.x, particle.y, 5, 5);
-                particle.y += 2;
-                if (particle.y > canvas.height) {
-                    particleEffects.splice(index, 1);
-                }
-            });
-        }
-
-        function update() {
+        function gameLoop() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-            drawPlayer();
-            drawAliens();
-            drawBullets();
-            handleCollisions();
-            drawParticles();
-            requestAnimationFrame(update);
+            player.draw();
+            bullets.forEach((bullet) => {
+                bullet.update();
+                bullet.draw();
+            });
+            aliens.forEach((alien) => alien.draw());
+            collisionDetection();
+
+            requestAnimationFrame(gameLoop);
         }
 
-        function shoot() {
-            bullets.push({ x: player.x + player.width / 2, y: player.y, width: 5, height: 10, speed: 4 });
-        }
-
-        createAliens();
-        update();
-
-        window.addEventListener('keydown', (e) => {
-            if (e.key === 'ArrowLeft') player.x -= player.speed;
-            if (e.key === 'ArrowRight') player.x += player.speed;
-            if (e.key === ' ') shoot();
+        window.addEventListener('keydown', (event) => {
+            if (event.code === 'ArrowLeft') player.move(-1);
+            if (event.code === 'ArrowRight') player.move(1);
+            if (event.code === 'Space') player.shoot();
         });
+
+        function startGame() {
+            player = new Player();
+            createAliens();
+            gameLoop();
+        }
+
+        startGame();
     </script>
 </body>
 </html>
